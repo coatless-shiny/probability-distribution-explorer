@@ -1,0 +1,23 @@
+Package: probdistviewer
+Title: Probability Distribution Viewer
+Version: 0.0.0.9000
+Authors@R: 
+    person("James Joseph", "Balamuta", email = "james.balamuta@gmail.com", 
+           role = c("aut", "cre", "cph"), 
+           comment = c(ORCID = "0000-0003-2826-8458"))
+Description: A Shiny application for visualizing probability distributions.
+URL: https://github.com/coatless-shiny/probability-distribution-explorer, https://shiny.thecoatlessprofessor.com/probability-distribution-explorer/
+BugReports: https://github.com/coatless-shiny/probability-distribution-explorer/issues
+License: AGPL (>= 3)
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.2
+Imports: 
+    shiny, 
+    ggplot2,
+    dplyr, 
+    tidyr, 
+    bslib
+Depends: 
+    R (>= 4.3.0)
+LazyData: true
