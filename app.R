@@ -269,7 +269,8 @@ ui <- page_sidebar(
     conditionalPanel(
       condition = "input.show_comparison == true",
       selectInput("comp_dist", "Compare with:",
-                  choices = names(distributions)),
+                  choices = names(distributions),
+                  selected = "Normal"),
       uiOutput("comparison_parameter_inputs")
     ),
 
