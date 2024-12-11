@@ -246,7 +246,8 @@ ui <- page_sidebar(
   sidebar = sidebar(
     ### Distribution Settings ---
     selectInput("dist_type", "Select Distribution:",
-                choices = names(distributions)),
+                choices = names(distributions),
+                selected = "Normal"),
     uiOutput("parameter_inputs"),
     uiOutput("validation_message"),
 
