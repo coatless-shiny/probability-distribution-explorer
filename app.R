@@ -1,250 +1,29 @@
+# Required libraries ----
 library(shiny)
 library(ggplot2)
 library(dplyr)
 library(tidyr)
 library(bslib)
 
-# Distribution Configuration ----
-# Defines the properties and parameters for each supported probability distribution
-# Structure:
-# - params: Parameter names for the distribution
-# - defaults: Default values for parameters
-# - param_ranges: Valid ranges for each parameter
-# - range: Suggested x-axis range for plotting
-# - discrete: Boolean indicating if distribution is discrete
-# - r_name: R function prefix for the distribution (e.g., "norm" for normal)
-distributions <- list(
-  "Beta" = list(
-    params = c("shape1", "shape2"),
-    defaults = c(2, 2),
-    param_ranges = list(
-      shape1 = c(0, Inf),  # Must be positive
-      shape2 = c(0, Inf)   # Must be positive
-    ),
-    range = c(0, 1),
-    discrete = FALSE,
-    r_name = "beta"
-  ),
-  "Binomial" = list(
-    params = c("size", "prob"),
-    defaults = c(10, 0.5),
-    param_ranges = list(
-      size = c(1, Inf),    # Must be positive integer
-      prob = c(0, 1)       # Must be between 0 and 1
-    ),
-    range = NULL,
-    discrete = TRUE,
-    r_name = "binom"
-  ),
-  "Cauchy" = list(
-    params = c("location", "scale"),
-    defaults = c(0, 1),
-    param_ranges = list(
-      location = c(-Inf, Inf),  # Any real number
-      scale = c(0, Inf)         # Must be positive
-    ),
-    range = c(-10, 10),
-    discrete = FALSE,
-    r_name = "cauchy"
-  ),
-  "Chi-squared" = list(
-    params = c("df"),
-    defaults = c(1),
-    param_ranges = list(
-      df = c(0, Inf)  # Must be positive
-    ),
-    range = c(0, 20),
-    discrete = FALSE,
-    r_name = "chisq"
-  ),
-  "Exponential" = list(
-    params = c("rate"),
-    defaults = c(1),
-    param_ranges = list(
-      rate = c(0, Inf)  # Must be positive
-    ),
-    range = c(0, 10),
-    discrete = FALSE,
-    r_name = "exp"
-  ),
-  "F" = list(
-    params = c("df1", "df2"),
-    defaults = c(1, 1),
-    param_ranges = list(
-      df1 = c(0, Inf),  # Must be positive
-      df2 = c(0, Inf)   # Must be positive
-    ),
-    range = c(0, 10),
-    discrete = FALSE,
-    r_name = "f"
-  ),
-  "Gamma" = list(
-    params = c("shape", "rate"),
-    defaults = c(1, 1),
-    param_ranges = list(
-      shape = c(0, Inf),  # Must be positive
-      rate = c(0, Inf)    # Must be positive
-    ),
-    range = c(0, 20),
-    discrete = FALSE,
-    r_name = "gamma"
-  ),
-  "Geometric" = list(
-    params = c("prob"),
-    defaults = c(0.5),
-    param_ranges = list(
-      prob = c(0, 1)  # Must be between 0 and 1
-    ),
-    range = NULL,
-    discrete = TRUE,
-    r_name = "geom"
-  ),
-  "Hypergeometric" = list(
-    params = c("m", "n", "k"),
-    defaults = c(10, 7, 8),
-    param_ranges = list(
-      m = c(0, Inf),    # Number of white balls
-      n = c(0, Inf),    # Number of black balls
-      k = c(1, Inf)     # Number of draws
-    ),
-    range = NULL,
-    discrete = TRUE,
-    r_name = "hyper"
-  ),
-  "Logistic" = list(
-    params = c("location", "scale"),
-    defaults = c(0, 1),
-    param_ranges = list(
-      location = c(-Inf, Inf),  # Any real number
-      scale = c(0, Inf)         # Must be positive
-    ),
-    range = c(-10, 10),
-    discrete = FALSE,
-    r_name = "logis"
-  ),
-  "Log-normal" = list(
-    params = c("meanlog", "sdlog"),
-    defaults = c(0, 1),
-    param_ranges = list(
-      meanlog = c(-Inf, Inf),  # Any real number
-      sdlog = c(0, Inf)        # Must be positive
-    ),
-    range = c(0, 10),
-    discrete = FALSE,
-    r_name = "lnorm"
-  ),
-  "Negative Binomial" = list(
-    params = c("size", "prob"),
-    defaults = c(10, 0.5),
-    param_ranges = list(
-      size = c(1, Inf),  # Must be positive integer
-      prob = c(0, 1)     # Must be between 0 and 1
-    ),
-    range = NULL,
-    discrete = TRUE,
-    r_name = "nbinom"
-  ),
-  "Normal" = list(
-    params = c("mean", "sd"),
-    defaults = c(0, 1),
-    param_ranges = list(
-      mean = c(-Inf, Inf),  # Any real number
-      sd = c(0, Inf)        # Must be positive
-    ),
-    range = c(-10, 10),
-    discrete = FALSE,
-    r_name = "norm"
-  ),
-  "Poisson" = list(
-    params = c("lambda"),
-    defaults = c(1),
-    param_ranges = list(
-      lambda = c(0, Inf)  # Must be positive
-    ),
-    range = NULL,
-    discrete = TRUE,
-    r_name = "pois"
-  ),
-  "Student's t" = list(
-    params = c("df"),
-    defaults = c(1),
-    param_ranges = list(
-      df = c(0, Inf)  # Must be positive
-    ),
-    range = c(-10, 10),
-    discrete = FALSE,
-    r_name = "t"
-  ),
-  "Uniform" = list(
-    params = c("min", "max"),
-    defaults = c(0, 1),
-    param_ranges = list(
-      min = c(-Inf, Inf),  # Any real number
-      max = c(-Inf, Inf)   # Any real number > min
-    ),
-    range = c(-10, 10),
-    discrete = FALSE,
-    r_name = "unif"
-  ),
-  "Weibull" = list(
-    params = c("shape", "scale"),
-    defaults = c(1, 1),
-    param_ranges = list(
-      shape = c(0, Inf),  # Must be positive
-      scale = c(0, Inf)   # Must be positive
-    ),
-    range = c(0, 10),
-    discrete = FALSE,
-    r_name = "weibull"
-  )
-)
-
-# Stanford Brand Colors ----
-# Primary colors from Stanford's identity guide
-stanford_colors <- list(
-  cardinal_red = "#8C1515",
-  cardinal_dark = "#820000",
-  digital_red = "#B1040E",
-  cool_grey = "#4D4F53",
-  process_black = "#2E2D29",
-  fog = "#DAD7CB",
-  stone = "#544948",
-  sky = "#0098DB",
-  palo_alto = "#175E54",
-  beige = "#F4F4F4",
-  white =  "#FFFFFF"
-)
+# Configuration ----
+source("config/colors.R")        # Contains stanford_colors list
+source("config/distributions.R") # Contains distributions list
+source("helpers.R")              # Contains helper functions
 
 
 # UI Definition ----
-# Creates a sidebar layout with:
-# - Distribution selection and parameter inputs
-# - Visualization options
-# - Comparison settings
-# - CLT demonstration controls
-
-ui <- page_sidebar(
-  theme = bs_theme(
-    version = 5,
-    bootswatch = "flatly",
-    foreground = stanford_colors$process_black,
-    background = stanford_colors$white,
-    primary    = stanford_colors$cardinal_red,
-    secondary  = stanford_colors$cool_grey,
-    tertiary   = stanford_colors$fog,
-    success    = stanford_colors$palo_alto,
-    info       = stanford_colors$sky,
-    warning    = stanford_colors$digital_red,
-    danger     = stanford_colors$cardinal_dark,
-    light      = stanford_colors$beige,
-    dark       = stanford_colors$process_black
-  ),
+ui <- page_navbar(
+  theme = create_theme(dark_mode = FALSE),
 
   title = "Probability Distributions Explorer",
 
+  nav_item(
+    input_dark_mode(id = "dark_mode")
+  ),
+
   ## Sidebar ----
   sidebar = sidebar(
-    ### Distribution Settings ---
+    ### Distribution Settings ----
     selectInput("dist_type", "Select Distribution:",
                 choices = names(distributions),
                 selected = "Normal"),
@@ -252,7 +31,6 @@ ui <- page_sidebar(
     uiOutput("validation_message"),
 
     hr(),
-
     ### Visualization Options ----
     checkboxInput("show_cumulative", "Show Cumulative Function", TRUE),
     checkboxInput("show_prob", "Show Probability Region", FALSE),
@@ -263,19 +41,17 @@ ui <- page_sidebar(
     ),
 
     hr(),
-
-    ### Comparison Settings ----
+    ### Comparison settings ----
     checkboxInput("show_comparison", "Show Comparison Distribution", FALSE),
     conditionalPanel(
       condition = "input.show_comparison == true",
       selectInput("comp_dist", "Compare with:",
                   choices = names(distributions),
                   selected = "Normal"),
-      uiOutput("comparison_parameter_inputs")
+      uiOutput("comp_parameter_inputs")
     ),
 
     hr(),
-
     ### CLT Demonstration ----
     checkboxInput("show_clt", "Demonstrate Central Limit Theorem", FALSE),
     conditionalPanel(
@@ -290,21 +66,71 @@ ui <- page_sidebar(
   ),
 
   ## Main panel content ----
-  card(
-    card_body(
-      uiOutput("plots_container")  # Dynamic plot container
-    )
+  nav_panel(
+    "",
+    uiOutput("plots_container")
   )
 )
 
-
-# Server logic ----
+# Server Logic ----
 server <- function(input, output, session) {
 
-  # Dynamic Parameter Input Generation ----
-  # Creates numeric inputs for distribution parameters with appropriate ranges
-  # and step sizes based on the parameter type
+  # Theme Management ----
+  observe({
+    is_dark <- isTRUE(input$dark_mode == "dark")
+    session$setCurrentTheme(create_theme(dark_mode = is_dark))
+  })
 
+  plot_theme <- reactive({
+    is_dark <- isTRUE(input$dark_mode == "dark")
+    create_plot_theme(dark_mode = is_dark)
+  })
+
+  # Parameter Management ----
+  ## Get current parameter values for main distribution ----
+  get_params <- reactive({
+    dist <- distributions[[input$dist_type]]
+
+    # Ensure all parameters exist before proceeding
+    req(all(sapply(seq_along(dist$params), function(i) !is.null(input[[paste0("param_", i)]]))))
+
+    # Get values for each parameter
+    params <- lapply(seq_along(dist$params), function(i) {
+      value <- input[[paste0("param_", i)]]
+      # Use default value if input is invalid
+      if (is.null(value) || !is.numeric(value)) {
+        value <- dist$defaults[i]
+      }
+      value
+    })
+
+    # Name the parameters according to the distribution specification
+    setNames(params, dist$params)
+  })
+
+  ## Get current parameter values for comparison distribution ----
+  get_comp_params <- reactive({
+    req(input$show_comparison)
+    dist <- distributions[[input$comp_dist]]
+
+    # Ensure all parameters exist before proceeding
+    req(all(sapply(seq_along(dist$params), function(i) !is.null(input[[paste0("comp_param_", i)]]))))
+
+    # Get values for each parameter
+    params <- lapply(seq_along(dist$params), function(i) {
+      value <- input[[paste0("comp_param_", i)]]
+      # Use default value if input is invalid
+      if (is.null(value) || !is.numeric(value)) {
+        value <- dist$defaults[i]
+      }
+      value
+    })
+
+    # Name the parameters according to the distribution specification
+    setNames(params, dist$params)
+  })
+
+  ## Generate dynamic parameter inputs for main distribution ----
   output$parameter_inputs <- renderUI({
     dist <- distributions[[input$dist_type]]
     param_inputs <- lapply(seq_along(dist$params), function(i) {
@@ -347,155 +173,8 @@ server <- function(input, output, session) {
     do.call(tagList, param_inputs)
   })
 
-
-  # Parameter Value Retrieval and Validation Functions ----
-  # get_params: Retrieves current parameter values
-  # validate_params: Ensures parameters meet distribution constraints
-
-  ## Get current parameter values for main distribution ----
-  get_params <- reactive({
-    dist <- distributions[[input$dist_type]]
-    # Ensure all parameters exist before proceeding
-    req(all(sapply(seq_along(dist$params), function(i) !is.null(input[[paste0("param_", i)]]))))
-
-    params <- lapply(seq_along(dist$params), function(i) {
-      value <- input[[paste0("param_", i)]]
-      # Ensure numeric and valid values
-      if (is.null(value) || !is.numeric(value)) {
-        value <- dist$defaults[i]
-      }
-      value
-    })
-    setNames(params, dist$params)
-  })
-
-
-  ## Validation for main distribution parameters ----
-  validate_params <- reactive({
-    dist <- distributions[[input$dist_type]]
-    params <- get_params()
-
-    # Validate all parameters
-    errors <- character(0)
-
-    for(param_name in names(params)) {
-      value <- params[[param_name]]
-      range <- dist$param_ranges[[param_name]]
-
-      # Check if value is numeric and finite
-      if(is.null(value) || !is.numeric(value) || !is.finite(value)) {
-        errors <- c(errors, sprintf("%s must be a valid number", param_name))
-        next
-      }
-
-      # Check if value is within valid range
-      if(value < range[1]) {
-        errors <- c(errors, sprintf("%s must be greater than %s",
-                                    param_name,
-                                    if(range[1] == 0) "0" else range[1]))
-      }
-      if(value > range[2]) {
-        errors <- c(errors, sprintf("%s must be less than %s",
-                                    param_name,
-                                    if(is.infinite(range[2])) "∞" else range[2]))
-      }
-
-      # Check for integer requirement for discrete parameters
-      if(dist$discrete && param_name == "size") {
-        if(abs(value - round(value)) > .Machine$double.eps^0.5) {
-          errors <- c(errors, sprintf("%s must be an integer", param_name))
-        }
-      }
-    }
-
-    # Special case validations
-    if(input$dist_type == "Uniform") {
-      if(params$max <= params$min) {
-        errors <- c(errors, "Maximum must be greater than minimum")
-      }
-    }
-
-    if(input$dist_type == "Hypergeometric") {
-      if(params$k > (params$m + params$n)) {
-        errors <- c(errors, "Number of draws (k) cannot exceed total number of balls (m + n)")
-      }
-    }
-
-    if(length(errors) > 0) return(errors)
-    return(NULL)
-  })
-
-  # Distribution Data Generation ----
-  # Creates datasets for plotting density and cumulative functions
-  dist_data <- reactive({
-    req(input$dist_type)
-
-    # Check for validation errors
-    errors <- validate_params()
-    if(!is.null(errors)) {
-      return(NULL)
-    }
-
-    dist <- distributions[[input$dist_type]]
-    params <- get_params()
-
-    # Generate x values
-    if (dist$discrete) {
-      max_x <- tryCatch({
-        val <- switch(input$dist_type,
-                      "Binomial" = params$size,
-                      "Poisson" = min(qpois(0.999, params$lambda), 100),
-                      "Geometric" = min(qgeom(0.999, params$prob), 50),
-                      "Negative Binomial" = min(qnbinom(0.999, params$size, params$prob), 100),
-                      "Hypergeometric" = min(params$k, params$m),
-                      30
-        )
-        val
-      }, error = function(e) 30)
-
-      x <- 0:max_x
-    } else {
-      if (!is.null(dist$range)) {
-        x <- seq(dist$range[1], dist$range[2], length.out = 200)
-      } else {
-        x <- seq(-10, 10, length.out = 200)
-      }
-    }
-
-    # Safely calculate density and cumulative
-    result <- tryCatch({
-      d_func <- get(paste0("d", dist$r_name))
-      p_func <- get(paste0("p", dist$r_name))
-
-      density <- do.call(d_func, c(list(x), params))
-      cumulative <- do.call(p_func, c(list(x), params))
-
-      # Remove any NA or infinite values
-      valid_idx <- !is.na(density) & !is.na(cumulative) &
-        is.finite(density) & is.finite(cumulative)
-
-      if (any(!valid_idx)) {
-        x <- x[valid_idx]
-        density <- density[valid_idx]
-        cumulative <- cumulative[valid_idx]
-      }
-
-      if (length(x) > 0) {
-        data.frame(x = x, density = density, cumulative = cumulative)
-      } else {
-        NULL
-      }
-    }, error = function(e) NULL)
-
-    result
-  })
-
-  # Comparison Distribution Parameter Functions ----
-  # Handles the generation and validation of parameters for the comparison
-  # distribution when enabled
-
-  ## Dynamic parameter inputs for comparison distribution ----
-  output$comparison_parameter_inputs <- renderUI({
+  ## Generate dynamic parameter inputs for comparison distribution ----
+  output$comp_parameter_inputs <- renderUI({
     req(input$show_comparison)
     dist <- distributions[[input$comp_dist]]
     param_inputs <- lapply(seq_along(dist$params), function(i) {
@@ -538,98 +217,91 @@ server <- function(input, output, session) {
     do.call(tagList, param_inputs)
   })
 
-  ## Get current parameter values for comparison distribution ----
-  get_comp_params <- reactive({
-    req(input$show_comparison)
-    dist <- distributions[[input$comp_dist]]
-    # Ensure all parameters exist before proceeding
-    req(all(sapply(seq_along(dist$params), function(i) !is.null(input[[paste0("comp_param_", i)]]))))
-
-    params <- lapply(seq_along(dist$params), function(i) {
-      value <- input[[paste0("comp_param_", i)]]
-      # Use default value if input is invalid
-      if (is.null(value) || !is.numeric(value)) {
-        value <- dist$defaults[i]
-      }
-      value
-    })
-    setNames(params, dist$params)
-  })
-
-
-  ## Validation for comparison distribution parameters ----
-  validate_comp_params <- reactive({
-    req(input$show_comparison)
-    dist <- distributions[[input$comp_dist]]
-    params <- get_comp_params()
+  # Parameter Validation Functions ----
+  validate_params <- function(dist_type, params, is_comparison = FALSE) {
+    dist <- distributions[[dist_type]]
 
     # Validate all parameters
     errors <- character(0)
 
-    # Check each parameter against its constraints
     for(param_name in names(params)) {
       value <- params[[param_name]]
       range <- dist$param_ranges[[param_name]]
 
       # Check if value is numeric and finite
       if(is.null(value) || !is.numeric(value) || !is.finite(value)) {
-        errors <- c(errors, sprintf("Comparison %s must be a valid number", param_name))
+        prefix <- if(is_comparison) "Comparison " else ""
+        errors <- c(errors, sprintf("%s%s must be a valid number", prefix, param_name))
         next
       }
 
       # Check if value is within valid range
       if(value < range[1]) {
-        errors <- c(errors, sprintf("Comparison %s must be greater than %s",
-                                    param_name,
+        prefix <- if(is_comparison) "Comparison " else ""
+        errors <- c(errors, sprintf("%s%s must be greater than %s",
+                                    prefix, param_name,
                                     if(range[1] == 0) "0" else range[1]))
       }
       if(value > range[2]) {
-        errors <- c(errors, sprintf("Comparison %s must be less than %s",
-                                    param_name,
+        prefix <- if(is_comparison) "Comparison " else ""
+        errors <- c(errors, sprintf("%s%s must be less than %s",
+                                    prefix, param_name,
                                     if(is.infinite(range[2])) "∞" else range[2]))
       }
 
       # Check for integer requirement for discrete parameters
       if(dist$discrete && param_name == "size") {
         if(abs(value - round(value)) > .Machine$double.eps^0.5) {
-          errors <- c(errors, sprintf("Comparison %s must be an integer", param_name))
+          prefix <- if(is_comparison) "Comparison " else ""
+          errors <- c(errors, sprintf("%s%s must be an integer", prefix, param_name))
         }
       }
     }
 
-    # Special case validations for comparison distribution
-    if(input$comp_dist == "Uniform") {
+    # Special case validations
+    if(dist_type == "Uniform") {
+      prefix <- if(is_comparison) "Comparison " else ""
       if(params$max <= params$min) {
-        errors <- c(errors, "Comparison maximum must be greater than minimum")
+        errors <- c(errors, sprintf("%smaximum must be greater than minimum", prefix))
       }
     }
 
-    if(input$comp_dist == "Hypergeometric") {
+    if(dist_type == "Hypergeometric") {
+      prefix <- if(is_comparison) "Comparison " else ""
       if(params$k > (params$m + params$n)) {
-        errors <- c(errors, "Comparison number of draws (k) cannot exceed total number of balls (m + n)")
+        errors <- c(errors, sprintf("%snumber of draws (k) cannot exceed total number of balls (m + n)", prefix))
       }
     }
 
     if(length(errors) > 0) return(errors)
     return(NULL)
+  }
+
+  # In the server function, update these reactive expressions:
+  get_validation_errors <- reactive({
+    # Get main distribution errors
+    main_errors <- validate_params(input$dist_type, get_params())
+
+    # Get comparison distribution errors if needed
+    comp_errors <- if(input$show_comparison) {
+      validate_params(input$comp_dist, get_comp_params(), is_comparison = TRUE)
+    } else NULL
+
+    # Combine all errors
+    c(main_errors, comp_errors)
   })
 
-
-
-  # Add error message UI
+  # Update the validation message UI output
   output$validation_message <- renderUI({
-    errors <- validate_params()
-    comp_errors <- if(input$show_comparison) validate_comp_params() else NULL
+    errors <- get_validation_errors()
 
-    all_errors <- c(errors, comp_errors)
-
-    if(!is.null(all_errors)) {
+    if(!is.null(errors)) {
       div(
         class = "alert alert-danger",
         style = "margin-top: 10px;",
         tags$b("Invalid parameters:"),
         tags$ul(
-          lapply(all_errors, function(error) {
+          lapply(errors, function(error) {
             tags$li(error)
           })
         )
@@ -638,376 +310,434 @@ server <- function(input, output, session) {
   })
 
 
-  ## Generate distribution data for comparison distribution ----
-  comp_dist_data <- reactive({
-    req(input$show_comparison)
+  # Distribution Data Generation ----
+  generate_dist_data <- function(dist_type, params) {
+    dist <- distributions[[dist_type]]
 
-    # Check for validation errors
-    errors <- validate_comp_params()
-    if(!is.null(errors)) {
-      return(NULL)
-    }
-
-    dist <- distributions[[input$comp_dist]]
-    params <- get_comp_params()
-    main_data <- dist_data()
-
-    # Use main distribution's x values if available
-    if (!is.null(main_data)) {
-      x <- main_data$x
+    if (dist$discrete) {
+      max_x <- switch(dist_type,
+                      "Binomial" = params$size,
+                      "Poisson" = min(qpois(0.999, params$lambda), 100),
+                      "Geometric" = min(qgeom(0.999, params$prob), 50),
+                      "Negative Binomial" = min(qnbinom(0.999, params$size, params$prob), 100),
+                      "Hypergeometric" = min(params$k, params$m),
+                      30)
+      x <- 0:max_x
     } else {
-      if (dist$discrete) {
-        max_x <- tryCatch({
-          val <- switch(input$comp_dist,
-                        "Binomial" = params$size,
-                        "Poisson" = min(qpois(0.999, params$lambda), 100),
-                        "Geometric" = min(qgeom(0.999, params$prob), 50),
-                        "Negative Binomial" = min(qnbinom(0.999, params$size, params$prob), 100),
-                        "Hypergeometric" = min(params$k, params$m),
-                        30
-          )
-          val
-        }, error = function(e) 30)
-
-        x <- 0:max_x
+      if (!is.null(dist$range)) {
+        x <- seq(dist$range[1], dist$range[2], length.out = 200)
       } else {
-        if (!is.null(dist$range)) {
-          x <- seq(dist$range[1], dist$range[2], length.out = 200)
-        } else {
-          x <- seq(-10, 10, length.out = 200)
-        }
+        x <- seq(-10, 10, length.out = 200)
       }
     }
 
-    # Calculate comparison distribution values
-    result <- tryCatch({
-      d_func <- get(paste0("d", dist$r_name))
-      p_func <- get(paste0("p", dist$r_name))
+    d_func <- get(paste0("d", dist$r_name))
+    p_func <- get(paste0("p", dist$r_name))
 
-      density <- do.call(d_func, c(list(x), params))
-      cumulative <- do.call(p_func, c(list(x), params))
+    density <- do.call(d_func, c(list(x), params))
+    cumulative <- do.call(p_func, c(list(x), params))
 
-      # Remove invalid values
-      valid_idx <- !is.na(density) & !is.na(cumulative) &
-        is.finite(density) & is.finite(cumulative)
+    data.frame(x = x, density = density, cumulative = cumulative)
+  }
 
-      if (any(!valid_idx)) {
-        x <- x[valid_idx]
-        density <- density[valid_idx]
-        cumulative <- cumulative[valid_idx]
-      }
-
-      if (length(x) > 0) {
-        data.frame(x = x, density = density, cumulative = cumulative)
-      } else {
-        NULL
-      }
+  dist_data <- reactive({
+    tryCatch({
+      generate_dist_data(input$dist_type, get_params())
     }, error = function(e) NULL)
-
-    result
   })
 
-  # Plot Generation Functions ----
+  comp_dist_data <- reactive({
+    req(input$show_comparison)
+    tryCatch({
+      generate_dist_data(input$comp_dist, get_comp_params())
+    }, error = function(e) NULL)
+  })
+
+  # Plot Generation ----
+  ## Base Plot ----
+  create_base_plot <- function(title = "", type = "density") {
+    is_dark <- isTRUE(input$dark_mode == "dark")
+    colors <- if(is_dark) bootstrap_colors$dark else bootstrap_colors$light
+
+    ggplot() +
+      labs(title = title,
+           x = "Value",
+           y = if(type == "density") "Density" else "Cumulative Probability") +
+      plot_theme()
+  }
+
+  ## Error Plot ----
+  create_error_plot <- function(message = "Please fix parameter errors to display plot") {
+    is_dark <- isTRUE(input$dark_mode == "dark")
+    colors <- if(is_dark) bootstrap_colors$dark else bootstrap_colors$light
+
+    ggplot() +
+      annotate("text", x = 0.5, y = 0.5,
+               label = message,
+               size = 6,
+               color = colors$fg) +
+      theme_void() +
+      theme(
+        panel.background = element_rect(
+          fill = colors$bg,
+          color = colors$border
+        )
+      )
+  }
+
+  # Plotting Functions with Error Handling ----
 
   ## Density Plot ----
-  # Creates density/mass and cumulative function plots
   output$densityPlot <- renderPlot({
-    main_data <- dist_data()
+    # Check for validation errors first
+    errors <- get_validation_errors()
 
-    if(is.null(main_data)) {
-      # Return an error plot
-      ggplot() +
-        annotate("text", x = 0.5, y = 0.5,
-                 label = "Please fix parameter errors to display plot",
-                 size = 6) +
-        theme_void() +
-        theme(panel.background = element_rect(fill = stanford_colors$fog))
-    } else {
+    if(!is.null(errors)) {
+      return(create_error_plot())
+    }
+
+    # Get data and check if valid
+    data <- dist_data()
+    if(is.null(data)) {
+      return(create_error_plot("Unable to generate plot data"))
+    }
+
+    dist <- distributions[[input$dist_type]]
+    is_dark <- isTRUE(input$dark_mode == "dark")
+    colors <- if(is_dark) bootstrap_colors$dark else bootstrap_colors$light
+
+    p <- create_base_plot({
       dist <- distributions[[input$dist_type]]
+      main_type <- if(dist$discrete) "PMF" else "PDF"
 
-      # Get comparison data if needed
-      comp_data <- NULL
-      comp_dist <- NULL
       if(input$show_comparison) {
-        comp_errors <- validate_comp_params()
-        if(is.null(comp_errors)) {
-          comp_data <- comp_dist_data()
-          comp_dist <- distributions[[input$comp_dist]]
-        }
+        comp_dist <- distributions[[input$comp_dist]]
+        comp_type <- if(comp_dist$discrete) "PMF" else "PDF"
+        sprintf("%s %s vs. %s %s", input$dist_type, main_type, input$comp_dist, comp_type)
+      } else {
+        sprintf("%s %s", input$dist_type, main_type)
       }
+    }, "density")
 
-      # Determine if we have any discrete distributions
-      has_discrete <- dist$discrete || (!is.null(comp_dist) && comp_dist$discrete)
+    # Add main distribution
+    if(dist$discrete) {
+      p <- p +
+        geom_segment(data = data,
+                     aes(x = x, xend = x, y = 0, yend = density),
+                     color = colors$primary) +
+        geom_point(data = data,
+                   aes(x = x, y = density),
+                   color = colors$primary)
+    } else {
+      p <- p + geom_line(data = data,
+                         aes(x = x, y = density),
+                         color = colors$primary)
+    }
 
-      # Determine x-axis range based on both distributions
-      x_range <- NULL
-      if(has_discrete) {
-        if(dist$discrete) {
-          x_range <- range(main_data$x)
-        }
-        if(!is.null(comp_dist) && comp_dist$discrete) {
-          comp_range <- range(comp_data$x)
-          if(is.null(x_range)) {
-            x_range <- comp_range
-          } else {
-            x_range <- range(c(x_range, comp_range))
-          }
-        }
-        # Add a small buffer
-        x_range <- c(floor(x_range[1]), ceiling(x_range[2]))
-      }
-
-      # Initialize plot
-      func_name <- if(dist$discrete) "PMF" else "PDF"
-      p <- ggplot() +
-        labs(title = if(input$show_comparison) {
-          paste(input$dist_type, "vs", input$comp_dist)
-        } else {
-          paste(input$dist_type, func_name)
-        },
-        x = "Value",
-        y = func_name) +
-        theme_minimal() +
-        # Update theme colors
-        theme(
-          plot.title = element_text(color = stanford_colors$cardinal_red),
-          axis.title = element_text(color = stanford_colors$process_black),
-          axis.text = element_text(color = stanford_colors$cool_grey),
-          panel.grid.major = element_line(color = stanford_colors$fog),
-          panel.grid.minor = element_line(color = stanford_colors$fog)
-        )
-
-      # If we have a discrete distribution, set the plot limits first
-      if(has_discrete) {
-        p <- p +
-          scale_x_continuous(
-            limits = x_range,
-            breaks = seq(x_range[1], x_range[2], by = 1)
-          ) +
-          theme(panel.grid.minor = element_blank())
-      }
-
-      # Function to filter continuous data to match discrete range
-      filter_continuous_data <- function(data, x_range) {
-        if(!is.null(x_range)) {
-          data |> filter(x >= x_range[1], x <= x_range[2])
-        } else {
-          data
-        }
-      }
-
-      # Plot continuous distributions first (if any)
-      if(!dist$discrete) {
-        main_data <- filter_continuous_data(main_data, x_range)
-        p <- p + geom_line(data = main_data,
-                           aes(x = x, y = density),
-                           linewidth = 1,
-                           color = stanford_colors$cardinal_red)
-      }
-
-      if(!is.null(comp_dist) && !comp_dist$discrete) {
-        comp_data <- filter_continuous_data(comp_data, x_range)
-        p <- p + geom_line(data = comp_data,
-                           aes(x = x, y = density),
-                           linewidth = 1,
-                           color = stanford_colors$sky,
-                           alpha = 0.8)
-      }
-
-      # Then plot discrete distributions (if any)
-      if(dist$discrete) {
-        p <- p +
-          geom_segment(data = main_data,
-                       aes(x = x, xend = x, y = 0, yend = density),
-                       color = stanford_colors$cardinal_red, linewidth = 1, alpha = 0.6) +
-          geom_point(data = main_data,
-                     aes(x = x, y = density),
-                     color = stanford_colors$cardinal_red, size = 3)
-      }
-
-      if(!is.null(comp_dist) && comp_dist$discrete) {
-        p <- p +
-          geom_segment(data = comp_data,
-                       aes(x = x, xend = x, y = 0, yend = density),
-                       color = stanford_colors$sky, linewidth = 1, alpha = 0.6) +
-          geom_point(data = comp_data,
-                     aes(x = x, y = density),
-                     color = stanford_colors$sky, size = 3)
-      }
-
-      # Add probability regions if requested
-      if(input$show_prob) {
-        # Add vertical lines for bounds
-        p <- p +
-          geom_vline(xintercept = input$lower_bound,
-                     linetype = "dashed",
-                     color = stanford_colors$cool_grey) +
-          geom_vline(xintercept = input$upper_bound,
-                     linetype = "dashed",
-                     color = stanford_colors$cool_grey)
-
-        # Add regions for main distribution
-        if(dist$discrete) {
-          subset_data <- main_data |>
-            filter(x >= input$lower_bound & x <= input$upper_bound)
+    # Add comparison distribution if requested
+    if(input$show_comparison) {
+      comp_data <- comp_dist_data()
+      if(!is.null(comp_data)) {
+        comp_dist <- distributions[[input$comp_dist]]
+        if(comp_dist$discrete) {
           p <- p +
-            geom_segment(data = subset_data,
+            geom_segment(data = comp_data,
                          aes(x = x, xend = x, y = 0, yend = density),
-                         color = stanford_colors$cardinal_dark, linewidth = 1.5, alpha = 0.8) +
-            geom_point(data = subset_data,
+                         color = colors$info, alpha = 0.6) +
+            geom_point(data = comp_data,
                        aes(x = x, y = density),
-                       color = stanford_colors$cardinal_dark, size = 3.5)
+                       color = colors$info)
         } else {
-          subset_data <- main_data |>
-            filter(x >= input$lower_bound & x <= input$upper_bound)
-          p <- p + geom_area(data = subset_data,
+          p <- p + geom_line(data = comp_data,
                              aes(x = x, y = density),
-                             fill = stanford_colors$cardinal_red,
-                             alpha = 0.5)
+                             color = colors$info,
+                             alpha = 0.6)
         }
+      }
+    }
 
-        # Add regions for comparison distribution
-        if(!is.null(comp_dist)) {
+    # Add probability region if requested
+    if(input$show_prob) {
+      # Add vertical lines for bounds
+      p <- p +
+        geom_vline(xintercept = c(input$lower_bound, input$upper_bound),
+                   linetype = "dashed",
+                   color = colors$secondary,
+                   alpha = 0.5)
+
+      # Add shading for main distribution
+      if(dist$discrete) {
+        subset_data <- subset(data, x >= input$lower_bound & x <= input$upper_bound)
+        p <- p +
+          geom_segment(data = subset_data,
+                       aes(x = x, xend = x, y = 0, yend = density),
+                       color = colors$primary,
+                       alpha = 0.8,
+                       linewidth = 2)
+      } else {
+        subset_data <- subset(data, x >= input$lower_bound & x <= input$upper_bound)
+        p <- p + geom_area(data = subset_data,
+                           aes(x = x, y = density),
+                           fill = colors$primary,
+                           alpha = 0.3)
+      }
+
+      # Add shading for comparison distribution if present
+      if(input$show_comparison) {
+        comp_data <- comp_dist_data()
+        if(!is.null(comp_data)) {
+          comp_dist <- distributions[[input$comp_dist]]
           if(comp_dist$discrete) {
-            comp_subset_data <- comp_data |>
-              filter(x >= input$lower_bound & x <= input$upper_bound)
+            comp_subset_data <- subset(comp_data, x >= input$lower_bound & x <= input$upper_bound)
             p <- p +
               geom_segment(data = comp_subset_data,
                            aes(x = x, xend = x, y = 0, yend = density),
-                           color = stanford_colors$sky, linewidth = 1.5, alpha = 0.8) +
-              geom_point(data = comp_subset_data,
-                         aes(x = x, y = density),
-                         color = stanford_colors$sky, size = 3.5)
+                           color = colors$info,
+                           alpha = 0.8,
+                           linewidth = 2)
           } else {
-            comp_subset_data <- comp_data |>
-              filter(x >= input$lower_bound & x <= input$upper_bound)
+            comp_subset_data <- subset(comp_data, x >= input$lower_bound & x <= input$upper_bound)
             p <- p + geom_area(data = comp_subset_data,
                                aes(x = x, y = density),
-                               fill = stanford_colors$sky,
-                               alpha = 0.5)
+                               fill = colors$info,
+                               alpha = 0.3)
           }
         }
       }
-
-      p
     }
+
+    p
   })
 
-  ## Cumulative plot ----
+  ## Cumulative Plot ----
   output$cumulativePlot <- renderPlot({
-    main_data <- dist_data()
+    # Check for validation errors first
+    errors <- get_validation_errors()
 
-    if(is.null(main_data)) {
-      # Return an error plot
-      ggplot() +
-        annotate("text", x = 0.5, y = 0.5,
-                 label = "Please fix parameter errors to display plot",
-                 size = 6) +
-        theme_void() +
-        theme(panel.background = element_rect(fill = stanford_colors$fog))
-    } else {
-      dist <- distributions[[input$dist_type]]
-      func_name <- if(dist$discrete) "CMF" else "CDF"
-
-      p <- ggplot() +
-        labs(title = paste(input$dist_type, func_name),
-             x = "Value",
-             y = func_name) +
-        theme_minimal() +
-        theme(
-          plot.title = element_text(color = stanford_colors$cardinal_red),
-          axis.title = element_text(color = stanford_colors$process_black),
-          axis.text = element_text(color = stanford_colors$cool_grey),
-          panel.grid.major = element_line(color = stanford_colors$fog),
-          panel.grid.minor = element_line(color = stanford_colors$fog)
-        )
-
-      # Base main distribution
-      if (dist$discrete) {
-        p <- p + geom_step(data = main_data,
-                           aes(x = x, y = cumulative),
-                           linewidth = 1,
-                           color = stanford_colors$cardinal_red)
-      } else {
-        p <- p + geom_line(data = main_data,
-                           aes(x = x, y = cumulative),
-                           linewidth = 1,
-                           color = stanford_colors$cardinal_red)
-      }
-
-      # Add comparison distribution if requested
-      if (input$show_comparison) {
-        comp_errors <- validate_comp_params()
-        if(is.null(comp_errors)) {
-          comp_data <- comp_dist_data()
-          if (!is.null(comp_data)) {
-            comp_dist <- distributions[[input$comp_dist]]
-
-            if (comp_dist$discrete) {
-              p <- p + geom_step(data = comp_data,
-                                 aes(x = x, y = cumulative),
-                                 linewidth = 1,
-                                 color = stanford_colors$sky,
-                                 alpha = 0.8)
-            } else {
-              p <- p + geom_line(data = comp_data,
-                                 aes(x = x, y = cumulative),
-                                 linewidth = 1,
-                                 color = stanford_colors$sky,
-                                 alpha = 0.8)
-            }
-
-            p <- p + labs(title = paste(input$dist_type, "vs", input$comp_dist, func_name))
-          }
-        }
-      }
-
-      # Add probability region indicators if requested
-      if (input$show_prob) {
-        # Vertical lines for region bounds
-        p <- p +
-          geom_vline(xintercept = input$lower_bound,
-                     linetype = "dashed",
-                     color = stanford_colors$cool_grey) +
-          geom_vline(xintercept = input$upper_bound,
-                     linetype = "dashed",
-                     color = stanford_colors$cool_grey)
-
-        # Highlight regions for main distribution
-        p <- p + geom_ribbon(data = subset(main_data,
-                                           x >= input$lower_bound & x <= input$upper_bound),
-                             aes(x = x, ymin = 0, ymax = cumulative),
-                             fill = stanford_colors$cardinal_red,
-                             alpha = 0.3)
-
-        # Highlight regions for comparison distribution if present
-        if (input$show_comparison) {
-          comp_data <- comp_dist_data()
-          if (!is.null(comp_data)) {
-            p <- p + geom_ribbon(data = subset(comp_data,
-                                               x >= input$lower_bound & x <= input$upper_bound),
-                                 aes(x = x, ymin = 0, ymax = cumulative),
-                                 fill = stanford_colors$sky,
-                                 alpha = 0.3)
-          }
-        }
-      }
-
-      # Scale adjustments for discrete distributions
-      if (dist$discrete) {
-        p <- p +
-          scale_x_continuous(breaks = main_data$x) +
-          theme(panel.grid.minor = element_blank())
-      }
-
-      p
+    if(!is.null(errors)) {
+      return(create_error_plot())
     }
+
+    # Get data and check if valid
+    data <- dist_data()
+    if(is.null(data)) {
+      return(create_error_plot("Unable to generate plot data"))
+    }
+
+    dist <- distributions[[input$dist_type]]
+    is_dark <- isTRUE(input$dark_mode == "dark")
+    colors <- if(is_dark) bootstrap_colors$dark else bootstrap_colors$light
+
+    p <- create_base_plot({
+      dist <- distributions[[input$dist_type]]
+      main_type <- if(dist$discrete) "CMF" else "CDF"
+
+      if(input$show_comparison) {
+        comp_dist <- distributions[[input$comp_dist]]
+        comp_type <- if(comp_dist$discrete) "CMF" else "CDF"
+        sprintf("%s %s vs. %s %s", input$dist_type, main_type, input$comp_dist, comp_type)
+      } else {
+        sprintf("%s %s", input$dist_type, main_type)
+      }
+    }, "cumulative")
+
+    # Add main distribution
+    if(dist$discrete) {
+      p <- p + geom_step(data = data,
+                         aes(x = x, y = cumulative),
+                         color = colors$primary)
+    } else {
+      p <- p + geom_line(data = data,
+                         aes(x = x, y = cumulative),
+                         color = colors$primary)
+    }
+
+    # Add comparison distribution if requested
+    if(input$show_comparison) {
+      comp_data <- comp_dist_data()
+      if(!is.null(comp_data)) {
+        comp_dist <- distributions[[input$comp_dist]]
+        if(comp_dist$discrete) {
+          p <- p + geom_step(data = comp_data,
+                             aes(x = x, y = cumulative),
+                             color = colors$info,
+                             alpha = 0.6)
+        } else {
+          p <- p + geom_line(data = comp_data,
+                             aes(x = x, y = cumulative),
+                             color = colors$info,
+                             alpha = 0.6)
+        }
+      }
+    }
+
+    # Add probability region if requested
+    if(input$show_prob) {
+      region_data <- subset(data,
+                            x >= input$lower_bound & x <= input$upper_bound)
+      p <- p +
+        geom_vline(xintercept = c(input$lower_bound, input$upper_bound),
+                   linetype = "dashed",
+                   color = colors$secondary,
+                   alpha = 0.5) +
+        geom_ribbon(data = region_data,
+                    aes(x = x, ymin = 0, ymax = cumulative),
+                    fill = colors$primary,
+                    alpha = 0.3)
+
+      if(input$show_comparison) {
+        comp_data <- comp_dist_data()
+        if(!is.null(comp_data)) {
+          comp_region_data <- subset(comp_data,
+                                     x >= input$lower_bound & x <= input$upper_bound)
+          p <- p + geom_ribbon(data = comp_region_data,
+                               aes(x = x, ymin = 0, ymax = cumulative),
+                               fill = colors$info,
+                               alpha = 0.3)
+        }
+      }
+    }
+
+    p
   })
 
+  ## Probability Calculation ----
+  output$probCalc <- renderUI({
+    # Check for validation errors first
+    errors <- get_validation_errors()
+
+    if(!is.null(errors)) {
+      return(div(
+        class = "alert alert-warning",
+        "Please fix parameter errors to calculate probabilities"
+      ))
+    }
+
+    req(input$show_prob)
+    data <- dist_data()
+    if(is.null(data)) return(NULL)
+
+    dist <- distributions[[input$dist_type]]
+    params <- get_params()
+    is_dark <- isTRUE(input$dark_mode == "dark")
+    colors <- if(is_dark) bootstrap_colors$dark else bootstrap_colors$light
+
+    # Calculate probability for main distribution
+    p_func <- get(paste0("p", dist$r_name))
+    main_prob <- tryCatch({
+      do.call(p_func, c(list(input$upper_bound), params)) -
+        do.call(p_func, c(list(input$lower_bound), params))
+    }, error = function(e) NULL)
+
+    # Calculate probability for comparison distribution if present
+    comp_prob <- if(input$show_comparison) {
+      comp_dist <- distributions[[input$comp_dist]]
+      comp_params <- get_comp_params()
+      comp_p_func <- get(paste0("p", comp_dist$r_name))
+
+      tryCatch({
+        do.call(comp_p_func, c(list(input$upper_bound), comp_params)) -
+          do.call(comp_p_func, c(list(input$lower_bound), comp_params))
+      }, error = function(e) NULL)
+    } else NULL
+
+    tagList(
+      if(!is.null(main_prob)) {
+        div(
+          class = "mb-2",
+          h5(class = "fw-bold text-primary",
+             paste("Primary Distribution:", input$dist_type)),
+          p(class = "mb-1",
+            paste("Probability in region [",
+                  round(input$lower_bound, 3), ", ",
+                  round(input$upper_bound, 3), "]: ",
+                  sprintf("%.4f", main_prob)))
+        )
+      },
+      if(!is.null(comp_prob)) {
+        div(
+          class = "mb-2",
+          h5(class = "fw-bold text-info",
+             paste("Comparison Distribution:", input$comp_dist)),
+          p(class = "mb-1",
+            paste("Probability in region [",
+                  round(input$lower_bound, 3), ", ",
+                  round(input$upper_bound, 3), "]: ",
+                  sprintf("%.4f", comp_prob)))
+        )
+      }
+    )
+  })
+
+  ## Central Limit Theorem Plot ----
+  output$cltPlot <- renderPlot({
+    # Check for validation errors first
+    errors <- get_validation_errors()
+
+    if(!is.null(errors)) {
+      return(create_error_plot())
+    }
+
+    req(input$show_clt)
+    dist <- distributions[[input$dist_type]]
+    params <- get_params()
+
+    is_dark <- isTRUE(input$dark_mode == "dark")
+    colors <- if(is_dark) bootstrap_colors$dark else bootstrap_colors$light
+
+    # Generate samples
+    r_func <- get(paste0("r", dist$r_name))
+    samples <- tryCatch({
+      replicate(input$num_samples, {
+        sample_means <- mean(do.call(r_func, c(list(input$sample_size), params)))
+        if(is.finite(sample_means)) sample_means else NA
+      })
+    }, error = function(e) NULL)
+
+    if(is.null(samples)) {
+      return(create_error_plot("Unable to generate samples"))
+    }
+
+    # Remove NA values
+    samples <- samples[!is.na(samples)]
+
+    if(length(samples) < 2) {
+      return(create_error_plot("Insufficient valid samples"))
+    }
+
+    # Calculate statistics for normal curve
+    sample_mean <- mean(samples)
+    sample_sd <- sd(samples)
+
+    # Create sequence for normal curve
+    x_range <- range(samples)
+    x_seq <- seq(x_range[1], x_range[2], length.out = 100)
+    normal_y <- dnorm(x_seq, mean = sample_mean, sd = sample_sd)
+
+    # Create plot
+    ggplot() +
+      geom_histogram(aes(x = samples, y = after_stat(density)),
+                     bins = min(30, input$num_samples %/% 10),
+                     fill = colors$primary,
+                     alpha = 0.5) +
+      geom_line(aes(x = x_seq, y = normal_y),
+                color = colors$info,
+                linewidth = 1) +
+      labs(title = "Sampling Distribution of Means",
+           subtitle = sprintf(
+             "Sample Size = %d, Number of Samples = %d\nMean = %.2f, SD = %.2f",
+             input$sample_size, input$num_samples, sample_mean, sample_sd
+           ),
+           x = "Sample Mean",
+           y = "Density") +
+      create_plot_theme(dark_mode = is_dark)
+  })
+
+  # UI Assembly ----
   output$plots_container <- renderUI({
     plots <- list()
 
-    # Create density and cumulative plots row if both are present
+    # Create density and cumulative plots row
     density_cumulative <- list()
 
     # Always add density plot
@@ -1019,7 +749,7 @@ server <- function(input, output, session) {
     )
 
     # Add cumulative plot if selected
-    if (input$show_cumulative) {
+    if(input$show_cumulative) {
       density_cumulative[[2]] <- card(
         card_header("Cumulative Function"),
         card_body(
@@ -1030,26 +760,35 @@ server <- function(input, output, session) {
 
     # Add first row with density and (optional) cumulative plots
     plots[[1]] <- layout_column_wrap(
-      width = 1/length(density_cumulative),
+      fillable = TRUE,
       !!!density_cumulative
     )
 
-    # Add probability analysis in its own row if requested
-    if (input$show_prob) {
-      plots[[length(plots) + 1]] <- card(
-        card_header("Probability Analysis"),
-        card_body(
-          uiOutput("probCalc")
+    # Add CLT plot if requested
+    if(input$show_clt) {
+      plots[[length(plots) + 1]] <- layout_column_wrap(
+          fillable = TRUE,
+          card(
+            card_header(
+              "Central Limit Theorem"
+            ),
+            card_body(
+              plotOutput("cltPlot")
+            )
         )
       )
     }
 
-    # Add CLT plot in its own row if requested
-    if (input$show_clt) {
-      plots[[length(plots) + 1]] <- card(
-        card_header("Central Limit Theorem"),
-        card_body(
-          plotOutput("cltPlot")
+    # Add probability analysis if requested
+    if(input$show_prob) {
+      plots[[length(plots) + 1]] <- layout_column_wrap(
+        card(
+          card_header(
+            "Probability Analysis"
+          ),
+          card_body(
+            uiOutput("probCalc")
+          )
         )
       )
     }
@@ -1057,144 +796,7 @@ server <- function(input, output, session) {
     # Return all plots in a vertical layout
     tagList(!!!plots)
   })
-
-  # Probability calculation ----
-  # Computes probabilities for selected regions
-  output$probCalc <- renderUI({
-    req(input$show_prob)
-
-    result <- tryCatch({
-      # Calculate probability for main distribution
-      main_data <- req(dist_data())
-      if(is.null(main_data)) return(NULL)
-
-      dist <- distributions[[input$dist_type]]
-      p_func <- get(paste0("p", dist$r_name))
-      params <- req(get_params())
-
-      main_prob <- do.call(p_func, c(list(input$upper_bound), params)) -
-        do.call(p_func, c(list(input$lower_bound), params))
-
-      # Calculate probability for comparison distribution if present
-      comp_prob <- if (input$show_comparison) {
-        comp_dist <- distributions[[input$comp_dist]]
-        comp_p_func <- get(paste0("p", comp_dist$r_name))
-        comp_params <- req(get_comp_params())
-
-        do.call(comp_p_func, c(list(input$upper_bound), comp_params)) -
-          do.call(comp_p_func, c(list(input$lower_bound), comp_params))
-      } else {
-        NULL
-      }
-
-      if (is.na(main_prob) || !is.finite(main_prob)) {
-        return(p("Unable to calculate probability for the given parameters"))
-      }
-
-      # Create formatted output
-      tagList(
-        div(
-          class = "mb-3",
-          h5(class = "fw-bold",
-             style = sprintf("color: %s;", stanford_colors$cardinal_red),
-             paste("Primary Distribution:", input$dist_type)),
-          p(class = "mb-2",
-            paste("Probability in region [",
-                  round(input$lower_bound, 3), ", ",
-                  round(input$upper_bound, 3), "]: ",
-                  sprintf("%.4f", main_prob)))
-        ),
-        if (!is.null(comp_prob)) {
-          if (is.na(comp_prob) || !is.finite(comp_prob)) {
-            div(
-              class = "mb-3",
-              h5(class = "fw-bold",
-                 style = sprintf("color: %s;", stanford_colors$sky),
-                 paste("Comparison Distribution:", input$comp_dist)),
-              p("Unable to calculate probability")
-            )
-          } else {
-            div(
-              class = "mb-3",
-              h5(class = "fw-bold",
-                 style = sprintf("color: %s;", stanford_colors$sky),
-                 paste("Comparison Distribution:", input$comp_dist)),
-              p(class = "mb-2",
-                paste("Probability in region [",
-                      round(input$lower_bound, 3), ", ",
-                      round(input$upper_bound, 3), "]: ",
-                      sprintf("%.4f", comp_prob)))
-            )
-          }
-        }
-      )
-    }, error = function(e) {
-      p(class = "text-danger",
-        style = sprintf("color: %s;", stanford_colors$cardinal_red),
-        "Unable to calculate probability for the given parameters")
-    })
-
-    result
-  })
-
-  # CLT Demonstration ----
-  # Simulates and visualizes the Central Limit Theorem
-  output$cltPlot <- renderPlot({
-    req(input$show_clt)
-
-    errors <- validate_params()
-    if(!is.null(errors)) {
-      return(
-        ggplot() +
-          annotate("text", x = 0.5, y = 0.5,
-                   label = "Please fix parameter errors to display plot",
-                   size = 6) +
-          theme_void() +
-          theme(panel.background = element_rect(fill = stanford_colors$fog))
-      )
-    }
-
-    params <- get_params()
-
-    tryCatch({
-      # Get the random generation function for the selected distribution
-      dist <- distributions[[input$dist_type]]
-      r_func <- get(paste0("r", dist$r_name))
-
-      # Generate samples
-      samples <- replicate(input$num_samples, {
-        sample_data <- do.call(r_func, c(list(input$sample_size), params))
-        mean(sample_data)
-      })
-
-      # Check for valid results
-      if (any(is.na(samples)) || any(!is.finite(samples))) {
-        return(NULL)
-      }
-
-      # Plot histogram of sample means
-      data.frame(sample_means = samples) |>
-        ggplot(aes(x = sample_means)) +
-        geom_histogram(aes(y = after_stat(density)), bins = 30,
-                       fill = stanford_colors$cardinal_red, alpha = 0.5) +
-        geom_density(color = stanford_colors$sky) +
-        labs(title = "Sampling Distribution of Means",
-             subtitle = paste("Sample Size =", input$sample_size,
-                              ", Number of Samples =", input$num_samples),
-             x = "Sample Mean",
-             y = "Density") +
-        theme_minimal() +
-        theme(
-          plot.title = element_text(color = stanford_colors$cardinal_red),  # Update title color
-          plot.subtitle = element_text(color = stanford_colors$cool_grey),  # Update subtitle color
-          axis.title = element_text(color = stanford_colors$process_black),         # Update axis title color
-          axis.text = element_text(color = stanford_colors$cool_grey),      # Update axis text color
-          panel.grid.major = element_line(color = stanford_colors$fog),     # Update major grid lines
-          panel.grid.minor = element_line(color = stanford_colors$fog)      # Update minor grid lines
-        )
-    }, error = function(e) NULL)
-  })
 }
 
-# Run the app
+# Run the application
 shinyApp(ui = ui, server = server)
