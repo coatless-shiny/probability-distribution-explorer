@@ -94,6 +94,13 @@ stanford_fonts <- list(
   )
 )
 
+#' Create Theme
+#'
+#' Creates a Bootstrap theme with Stanford colors
+#'
+#' @param dark_mode Logical indicating dark mode state (default: FALSE)
+#' @return bslib theme object
+#' @export
 create_theme <- function(dark_mode = FALSE) {
   colors <- if(dark_mode) bootstrap_colors$dark else bootstrap_colors$light
 
@@ -140,7 +147,13 @@ create_theme <- function(dark_mode = FALSE) {
   )
 }
 
-# Plot theme helper
+#' Create Plot Theme
+#'
+#' Creates a ggplot2 theme matching the application theme
+#'
+#' @param dark_mode Logical indicating dark mode state (default: FALSE)
+#' @return ggplot2 theme object
+#' @export
 create_plot_theme <- function(dark_mode = FALSE) {
   colors <- if(dark_mode) bootstrap_colors$dark else bootstrap_colors$light
 
