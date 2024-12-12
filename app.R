@@ -52,6 +52,7 @@ server <- function(input, output, session) {
   ## Initialize modules and handle data flow -----
   dist_data <- distributionServer("dist", dark_mode)
   plotServer("plots", dist_data, dark_mode)
+
 }
 
 # Run the application ----
