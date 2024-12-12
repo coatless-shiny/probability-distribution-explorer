@@ -4,7 +4,7 @@ The Probability Distributions Explorer is a web-based application that helps
 users understand various statistical distributions through visualization 
 and interactive parameter manipulation. The application is built with
 R Shiny and deployed using shinylive. Check out the live application at
-<https://shiny.thecoatlessprofessor.com/probability-distributions-explorer/>
+<https://shiny.thecoatlessprofessor.com/probability-distribution-explorer/>
 
 With the shiny app, you can:
 
