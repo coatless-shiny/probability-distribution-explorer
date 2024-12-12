@@ -29,7 +29,7 @@ ui <- page_navbar(
   title = "Probability Distributions Explorer",
 
   # Dark mode toggle
-  nav_item(input_dark_mode(id = "dark_mode")),
+  nav_item(input_dark_mode(id = "dark_mode", mode = "light")),
 
   # Sidebar with distribution controls
   sidebar = distributionSidebarUI("dist"),
