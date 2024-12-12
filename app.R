@@ -1031,25 +1031,32 @@ server <- function(input, output, session) {
     # Add first row with density and (optional) cumulative plots
     plots[[1]] <- layout_column_wrap(
       width = 1/length(density_cumulative),
+      fillable = TRUE,
       !!!density_cumulative
     )
 
     # Add probability analysis in its own row if requested
     if (input$show_prob) {
-      plots[[length(plots) + 1]] <- card(
-        card_header("Probability Analysis"),
-        card_body(
-          uiOutput("probCalc")
+      plots[[length(plots) + 1]] <- layout_column_wrap(
+        fillable = TRUE,
+        card(
+          card_header("Probability Analysis"),
+          card_body(
+            uiOutput("probCalc")
+          )
         )
       )
     }
 
     # Add CLT plot in its own row if requested
     if (input$show_clt) {
-      plots[[length(plots) + 1]] <- card(
-        card_header("Central Limit Theorem"),
-        card_body(
-          plotOutput("cltPlot")
+      plots[[length(plots) + 1]] <- layout_column_wrap(
+        fillable = TRUE,
+        card(
+          card_header("Central Limit Theorem"),
+          card_body(
+            plotOutput("cltPlot")
+          )
         )
       )
     }
